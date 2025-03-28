@@ -135,22 +135,50 @@ function ContentEditorInner({ course, onUpdateCourse }: ContentEditorProps) {
           id: blockData.item.id || `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
         }
         
-        // Add to the first chapter by default
-        const updatedChapters = [...course.chapters]
-        updatedChapters[0] = {
-          ...updatedChapters[0],
-          blocks: [...updatedChapters[0].blocks, blockToAdd],
-        }
+        // If we have an active drop zone, use it for positioning
+        if (activeDropZone) {
+          const { chapterId, index } = activeDropZone;
+          const updatedChapters = [...course.chapters];
+          
+          // Find the target chapter
+          const chapterIndex = updatedChapters.findIndex(ch => ch.id === chapterId);
+          if (chapterIndex !== -1) {
+            // Copy the chapter's blocks and insert the new block at the specified index
+            const updatedBlocks = [...updatedChapters[chapterIndex].blocks];
+            updatedBlocks.splice(index, 0, blockToAdd);
+            
+            // Update the chapter with the new blocks array
+            updatedChapters[chapterIndex] = {
+              ...updatedChapters[chapterIndex],
+              blocks: updatedBlocks
+            };
+            
+            // Update the course with the modified chapters
+            onUpdateCourse({
+              ...course,
+              chapters: updatedChapters,
+            });
+          }
+        } else {
+          // Fallback: Add to the first chapter if no active drop zone
+          const updatedChapters = [...course.chapters]
+          updatedChapters[0] = {
+            ...updatedChapters[0],
+            blocks: [...updatedChapters[0].blocks, blockToAdd],
+          }
 
-        onUpdateCourse({
-          ...course,
-          chapters: updatedChapters,
-        })
+          onUpdateCourse({
+            ...course,
+            chapters: updatedChapters,
+          })
+        }
       }
     } catch (error) {
       console.error("Failed to parse drop data", error)
     }
     setIsDragOver(false)
+    // Reset the active drop zone after handling the drop
+    setActiveDropZone(null)
   }
 
   // Handle starting the drag operation
@@ -182,75 +210,117 @@ function ContentEditorInner({ course, onUpdateCourse }: ContentEditorProps) {
     e.preventDefault()
     
     try {
-      const data = e.dataTransfer.getData('text/plain')
-      const dropData = JSON.parse(data)
+      // Try first as text/plain (for internal blocks)
+      let data = e.dataTransfer.getData('text/plain');
       
-      if (!dropData || !dropData.item) return
-      
-      const block = dropData.item
-      const sourceChapterId = dropData.sourceChapterId
-      const sourceIndex = dropData.sourceIndex
-      
-      // Create a copy of the chapters array
-      const updatedChapters = [...course.chapters]
-      
-      // If dropping within the same chapter
-      if (sourceChapterId === targetChapterId) {
-        // Get the chapter
-        const chapter = updatedChapters.find(ch => ch.id === sourceChapterId)
-        if (!chapter) return
-        
-        // Create a copy of the blocks
-        const updatedBlocks = [...chapter.blocks]
-        
-        // Remove the block from its original position
-        updatedBlocks.splice(sourceIndex, 1)
-        
-        // Insert the block at the new position
-        updatedBlocks.splice(targetIndex <= sourceIndex ? targetIndex : targetIndex - 1, 0, block)
-        
-        // Update the chapter
-        const chapterIndex = updatedChapters.findIndex(ch => ch.id === sourceChapterId)
-        updatedChapters[chapterIndex] = {
-          ...chapter,
-          blocks: updatedBlocks
-        }
-      } else {
-        // If moving between chapters
-        // Get the source and target chapters
-        const sourceChapter = updatedChapters.find(ch => ch.id === sourceChapterId)
-        const targetChapter = updatedChapters.find(ch => ch.id === targetChapterId)
-        
-        if (!sourceChapter || !targetChapter) return
-        
-        // Remove the block from the source chapter
-        const sourceBlocks = [...sourceChapter.blocks]
-        sourceBlocks.splice(sourceIndex, 1)
-        
-        // Add the block to the target chapter
-        const targetBlocks = [...targetChapter.blocks]
-        targetBlocks.splice(targetIndex, 0, block)
-        
-        // Update both chapters
-        const sourceChapterIndex = updatedChapters.findIndex(ch => ch.id === sourceChapterId)
-        const targetChapterIndex = updatedChapters.findIndex(ch => ch.id === targetChapterId)
-        
-        updatedChapters[sourceChapterIndex] = {
-          ...sourceChapter,
-          blocks: sourceBlocks
-        }
-        
-        updatedChapters[targetChapterIndex] = {
-          ...targetChapter,
-          blocks: targetBlocks
-        }
+      // If that fails, try as text (for generated blocks)
+      if (!data) {
+        data = e.dataTransfer.getData('text');
       }
       
-      // Update the course with the new chapters
-      onUpdateCourse({
-        ...course,
-        chapters: updatedChapters
-      })
+      // Parse the data
+      const dropData = JSON.parse(data);
+      
+      // Handle different types of blocks
+      if (dropData.type === 'content-block') {
+        // Handle existing content blocks
+        if (!dropData.item) return;
+        
+        const block = dropData.item;
+        const sourceChapterId = dropData.sourceChapterId;
+        const sourceIndex = dropData.sourceIndex;
+        
+        // Create a copy of the chapters array
+        const updatedChapters = [...course.chapters];
+        
+        // If dropping within the same chapter
+        if (sourceChapterId === targetChapterId) {
+          // Get the chapter
+          const chapter = updatedChapters.find(ch => ch.id === sourceChapterId);
+          if (!chapter) return;
+          
+          // Create a copy of the blocks
+          const updatedBlocks = [...chapter.blocks];
+          
+          // Remove the block from its original position
+          updatedBlocks.splice(sourceIndex, 1);
+          
+          // Insert the block at the new position
+          updatedBlocks.splice(targetIndex <= sourceIndex ? targetIndex : targetIndex - 1, 0, block);
+          
+          // Update the chapter
+          const chapterIndex = updatedChapters.findIndex(ch => ch.id === sourceChapterId);
+          updatedChapters[chapterIndex] = {
+            ...chapter,
+            blocks: updatedBlocks
+          };
+        } else {
+          // If moving between chapters
+          // Get the source and target chapters
+          const sourceChapter = updatedChapters.find(ch => ch.id === sourceChapterId);
+          const targetChapter = updatedChapters.find(ch => ch.id === targetChapterId);
+          
+          if (!sourceChapter || !targetChapter) return;
+          
+          // Remove the block from the source chapter
+          const sourceBlocks = [...sourceChapter.blocks];
+          sourceBlocks.splice(sourceIndex, 1);
+          
+          // Add the block to the target chapter
+          const targetBlocks = [...targetChapter.blocks];
+          targetBlocks.splice(targetIndex, 0, block);
+          
+          // Update both chapters
+          const sourceChapterIndex = updatedChapters.findIndex(ch => ch.id === sourceChapterId);
+          const targetChapterIndex = updatedChapters.findIndex(ch => ch.id === targetChapterId);
+          
+          updatedChapters[sourceChapterIndex] = {
+            ...sourceChapter,
+            blocks: sourceBlocks
+          };
+          
+          updatedChapters[targetChapterIndex] = {
+            ...targetChapter,
+            blocks: targetBlocks
+          };
+        }
+        
+        // Update the course with the new chapters
+        onUpdateCourse({
+          ...course,
+          chapters: updatedChapters
+        });
+      } else if (dropData.type === 'generated-block') {
+        // Handle generated blocks
+        const blockToAdd = {
+          ...dropData.item,
+          id: dropData.item.id || `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        };
+        
+        // Find the target chapter
+        const updatedChapters = [...course.chapters];
+        const chapterIndex = updatedChapters.findIndex(ch => ch.id === targetChapterId);
+        
+        if (chapterIndex !== -1) {
+          // Get the target chapter blocks
+          const targetBlocks = [...updatedChapters[chapterIndex].blocks];
+          
+          // Insert the new block at the specified position
+          targetBlocks.splice(targetIndex, 0, blockToAdd);
+          
+          // Update the chapter
+          updatedChapters[chapterIndex] = {
+            ...updatedChapters[chapterIndex],
+            blocks: targetBlocks
+          };
+          
+          // Update the course
+          onUpdateCourse({
+            ...course,
+            chapters: updatedChapters
+          });
+        }
+      }
     } catch (error) {
       console.error("Error handling block drop:", error)
     }
@@ -297,6 +367,46 @@ function ContentEditorInner({ course, onUpdateCourse }: ContentEditorProps) {
         }`}
         onDragOver={(e) => {
           e.preventDefault()
+          
+          // Try to detect if we're dragging over a chapter
+          // This will help us find the nearest chapter when dropping
+          const chaptersElements = editorRef.current?.querySelectorAll('[data-chapter-id]');
+          if (chaptersElements && chaptersElements.length > 0) {
+            // Get the positions of chapters
+            const chaptersPositions = Array.from(chaptersElements).map(element => {
+              const rect = element.getBoundingClientRect();
+              return {
+                chapterId: element.getAttribute('data-chapter-id'),
+                top: rect.top,
+                bottom: rect.bottom,
+                element
+              };
+            });
+            
+            // Find the closest chapter based on mouse position
+            const mouseY = e.clientY;
+            let closestChapter = null;
+            
+            for (const chapter of chaptersPositions) {
+              if (mouseY >= chapter.top && mouseY <= chapter.bottom) {
+                closestChapter = chapter;
+                break;
+              }
+            }
+            
+            // If we found a closest chapter, set it as active drop zone
+            if (closestChapter && closestChapter.chapterId) {
+              const chapter = course.chapters.find(c => c.id === closestChapter.chapterId);
+              if (chapter) {
+                // Default to placing at the end of the chapter
+                setActiveDropZone({ 
+                  chapterId: closestChapter.chapterId, 
+                  index: chapter.blocks.length 
+                });
+              }
+            }
+          }
+          
           setIsDragOver(true)
         }}
         onDragLeave={(e) => {
@@ -317,7 +427,7 @@ function ContentEditorInner({ course, onUpdateCourse }: ContentEditorProps) {
           </div>
         ) : (
           course.chapters.map((chapter) => (
-            <div key={chapter.id} className="mb-6">
+            <div key={chapter.id} className="mb-6" data-chapter-id={chapter.id}>
               <div className="flex items-center mb-2">
                 <button
                   onClick={() => toggleChapterExpanded(chapter.id)}
