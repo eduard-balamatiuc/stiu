@@ -1,9 +1,9 @@
 "use client"
 
+import React, { useState } from "react"
 import type { ContentBlock } from "@/lib/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { FileTextIcon, FileIcon, CheckSquareIcon, VideoIcon, HelpCircleIcon, LinkIcon, MoveIcon } from "lucide-react"
-import { useDrag } from "react-dnd"
 
 interface GeneratedContentBlockProps {
   content: ContentBlock
@@ -11,19 +11,7 @@ interface GeneratedContentBlockProps {
 }
 
 export default function GeneratedContentBlock({ content, onAddToEditor }: GeneratedContentBlockProps) {
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: "generated-block",
-    item: content,
-    end: (item, monitor) => {
-      const dropResult = monitor.getDropResult()
-      if (item && dropResult) {
-        onAddToEditor(content)
-      }
-    },
-    collect: (monitor) => ({
-      isDragging: !!monitor.isDragging(),
-    }),
-  }))
+  const [isDragging, setIsDragging] = useState(false)
 
   const getIcon = () => {
     switch (content.type) {
@@ -44,10 +32,45 @@ export default function GeneratedContentBlock({ content, onAddToEditor }: Genera
     }
   }
 
+  const handleDragStart = (e: React.DragEvent) => {
+    setIsDragging(true)
+    e.dataTransfer.setData('text', JSON.stringify({
+      type: 'generated-block',
+      item: content
+    }))
+    e.dataTransfer.effectAllowed = 'copy'
+    
+    // Create a custom drag image
+    const ghostElement = document.createElement('div')
+    ghostElement.className = 'bg-white p-2 border rounded shadow-md w-48'
+    ghostElement.textContent = content.content.substring(0, 30) + (content.content.length > 30 ? '...' : '')
+    document.body.appendChild(ghostElement)
+    e.dataTransfer.setDragImage(ghostElement, 20, 20)
+    
+    // Remove the element after a short delay
+    setTimeout(() => {
+      document.body.removeChild(ghostElement)
+    }, 0)
+  }
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    setIsDragging(false)
+    // Check if the drop was successful (can be determined by dropEffect)
+    if (e.dataTransfer.dropEffect === 'copy' || e.dataTransfer.dropEffect === 'move') {
+      onAddToEditor(content)
+    }
+  }
+
   return (
     <div
-      ref={drag}
-      className={`cursor-move ${isDragging ? "opacity-50 border-2 border-dashed border-blue-300 dark:border-blue-700" : "opacity-100"}`}
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      className={`cursor-move transition-all duration-200 ${
+        isDragging 
+          ? "opacity-50 border-2 border-dashed border-blue-300 dark:border-blue-700" 
+          : "opacity-100"
+      }`}
     >
       <Card className="w-full hover:shadow-md transition-shadow apple-card">
         <CardContent className="p-3">

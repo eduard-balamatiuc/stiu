@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import type { ContentBlock } from "@/lib/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -18,7 +18,6 @@ import {
   Trash2Icon,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { useDrag } from "react-dnd"
 
 interface ContentBlockProps {
   block: ContentBlock
@@ -30,14 +29,7 @@ export default function ContentBlockComponent({ block, onUpdate, onDelete }: Con
   const [isExpanded, setIsExpanded] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editedContent, setEditedContent] = useState(block.content)
-
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: "content-block",
-    item: block,
-    collect: (monitor) => ({
-      isDragging: !!monitor.isDragging(),
-    }),
-  }))
+  const [isDragging, setIsDragging] = useState(false)
 
   const getIcon = () => {
     switch (block.type) {
@@ -74,8 +66,16 @@ export default function ContentBlockComponent({ block, onUpdate, onDelete }: Con
   }
 
   return (
-    <div ref={drag} className={`w-full ${isDragging ? "opacity-50" : "opacity-100"}`}>
-      <Card className="w-full apple-card">
+    <div 
+      className={`w-full transition-opacity duration-200 ${isDragging ? "opacity-40" : "opacity-100"}`}
+      draggable
+      onDragStart={(e) => {
+        setIsDragging(true)
+        e.dataTransfer.setData('application/json', JSON.stringify(block))
+      }}
+      onDragEnd={() => setIsDragging(false)}
+    >
+      <Card className={`w-full apple-card ${isDragging ? "border-2 border-blue-400 shadow-lg" : ""}`}>
         <CardContent className="p-4">
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-2">

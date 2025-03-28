@@ -1,21 +1,84 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState, useRef } from "react"
 import type { Course, ContentBlock, Chapter } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useDrop, useDragLayer } from "react-dnd"
-import { SearchIcon, ChevronDownIcon, ChevronRightIcon, GripVerticalIcon } from "lucide-react"
+import { DndProvider, useDragLayer } from "react-dnd"
+import { HTML5Backend } from "react-dnd-html5-backend"
+import { SearchIcon, ChevronDownIcon, ChevronRightIcon, GripVerticalIcon, FileTextIcon, FileIcon, CheckSquareIcon, VideoIcon, HelpCircleIcon, LinkIcon } from "lucide-react"
 import ContentBlockComponent from "./content-block"
+
+// Drag preview component
+const DragPreview = () => {
+  const { isDragging, item, currentOffset } = useDragLayer((monitor) => ({
+    item: monitor.getItem(),
+    currentOffset: monitor.getSourceClientOffset(),
+    isDragging: monitor.isDragging(),
+  }))
+
+  if (!isDragging || !currentOffset || !item) {
+    return null
+  }
+
+  const { x, y } = currentOffset
+  const transform = `translate(${x}px, ${y}px)`
+
+  const getIcon = () => {
+    switch (item.type) {
+      case "text":
+        return <FileTextIcon className="h-4 w-4 text-blue-500" />
+      case "file":
+        return <FileIcon className="h-4 w-4 text-green-500" />
+      case "task":
+        return <CheckSquareIcon className="h-4 w-4 text-orange-500" />
+      case "video":
+        return <VideoIcon className="h-4 w-4 text-red-500" />
+      case "quiz":
+        return <HelpCircleIcon className="h-4 w-4 text-purple-500" />
+      case "link":
+        return <LinkIcon className="h-4 w-4 text-cyan-500" />
+      default:
+        return <FileTextIcon className="h-4 w-4 text-gray-500" />
+    }
+  }
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        pointerEvents: 'none',
+        zIndex: 100,
+        left: 0,
+        top: 0,
+        transform,
+        width: '300px',
+      }}
+    >
+      <div 
+        className="p-2 rounded-lg bg-white/90 dark:bg-slate-800/90 border border-gray-200 dark:border-gray-700 shadow-lg"
+      >
+        <div className="flex items-center gap-2">
+          {getIcon()}
+          <div className="line-clamp-1 text-sm font-medium">{item.content}</div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 interface ContentEditorProps {
   course: Course
   onUpdateCourse: (course: Course) => void
 }
 
-export default function ContentEditor({ course, onUpdateCourse }: ContentEditorProps) {
+function ContentEditorInner({ course, onUpdateCourse }: ContentEditorProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [expandedChapters, setExpandedChapters] = useState<Record<string, boolean>>({})
+  const [draggedBlockInfo, setDraggedBlockInfo] = useState<{ block: ContentBlock, chapterId: string, index: number } | null>(null)
+  const [activeDropZone, setActiveDropZone] = useState<{ chapterId: string, index: number } | null>(null)
+  const [isDragOver, setIsDragOver] = useState(false)
+  const editorRef = useRef<HTMLDivElement>(null)
 
   const handleUpdateCourse = () => {
     // In a real app, this would save to the backend
@@ -42,36 +105,151 @@ export default function ContentEditor({ course, onUpdateCourse }: ContentEditorP
     })
   }
 
-  const [{ isOver, canDrop }, drop] = useDrop(() => ({
-    accept: ["content-block", "generated-block"],
-    drop: (item: ContentBlock, monitor) => {
-      if (item && course.chapters.length > 0) {
+  // Handle dropping a generated block into the editor
+  const handleEditorDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    const data = e.dataTransfer.getData("text")
+    try {
+      const blockData = JSON.parse(data)
+      if (blockData && blockData.type === 'generated-block' && course.chapters.length > 0) {
         // Add to the first chapter by default
         const updatedChapters = [...course.chapters]
         updatedChapters[0] = {
           ...updatedChapters[0],
-          blocks: [...updatedChapters[0].blocks, item],
+          blocks: [...updatedChapters[0].blocks, blockData.item],
         }
 
         onUpdateCourse({
           ...course,
           chapters: updatedChapters,
         })
-
-        return { dropped: true }
       }
-    },
-    collect: (monitor) => ({
-      isOver: !!monitor.isOver(),
-      canDrop: !!monitor.canDrop(),
-    }),
-  }))
+    } catch (error) {
+      console.error("Failed to parse drop data", error)
+    }
+    setIsDragOver(false)
+  }
 
-  const { isDragging, item, currentOffset } = useDragLayer((monitor) => ({
-    item: monitor.getItem(),
-    currentOffset: monitor.getSourceClientOffset(),
-    isDragging: monitor.isDragging(),
-  }))
+  // Handle starting the drag operation
+  const handleDragStart = (e: React.DragEvent, block: ContentBlock, chapterId: string, index: number) => {
+    setDraggedBlockInfo({ block, chapterId, index })
+    e.dataTransfer.setData('text/plain', JSON.stringify({ 
+      type: 'content-block', 
+      item: block,
+      sourceChapterId: chapterId,
+      sourceIndex: index
+    }))
+    e.dataTransfer.effectAllowed = 'move'
+    
+    // Create a custom drag image
+    const ghostElement = document.createElement('div')
+    ghostElement.className = 'bg-white p-2 border rounded shadow-md w-48'
+    ghostElement.textContent = block.content.substring(0, 30) + (block.content.length > 30 ? '...' : '')
+    document.body.appendChild(ghostElement)
+    e.dataTransfer.setDragImage(ghostElement, 20, 20)
+    
+    // Remove the element after a short delay
+    setTimeout(() => {
+      document.body.removeChild(ghostElement)
+    }, 0)
+  }
+
+  // Handle dropping a block within the chapter list or into another chapter
+  const handleBlockDrop = (e: React.DragEvent, targetChapterId: string, targetIndex: number) => {
+    e.preventDefault()
+    
+    try {
+      const data = e.dataTransfer.getData('text/plain')
+      const dropData = JSON.parse(data)
+      
+      if (!dropData || !dropData.item) return
+      
+      const block = dropData.item
+      const sourceChapterId = dropData.sourceChapterId
+      const sourceIndex = dropData.sourceIndex
+      
+      // Create a copy of the chapters array
+      const updatedChapters = [...course.chapters]
+      
+      // If dropping within the same chapter
+      if (sourceChapterId === targetChapterId) {
+        // Get the chapter
+        const chapter = updatedChapters.find(ch => ch.id === sourceChapterId)
+        if (!chapter) return
+        
+        // Create a copy of the blocks
+        const updatedBlocks = [...chapter.blocks]
+        
+        // Remove the block from its original position
+        updatedBlocks.splice(sourceIndex, 1)
+        
+        // Insert the block at the new position
+        updatedBlocks.splice(targetIndex <= sourceIndex ? targetIndex : targetIndex - 1, 0, block)
+        
+        // Update the chapter
+        const chapterIndex = updatedChapters.findIndex(ch => ch.id === sourceChapterId)
+        updatedChapters[chapterIndex] = {
+          ...chapter,
+          blocks: updatedBlocks
+        }
+      } else {
+        // If moving between chapters
+        // Get the source and target chapters
+        const sourceChapter = updatedChapters.find(ch => ch.id === sourceChapterId)
+        const targetChapter = updatedChapters.find(ch => ch.id === targetChapterId)
+        
+        if (!sourceChapter || !targetChapter) return
+        
+        // Remove the block from the source chapter
+        const sourceBlocks = [...sourceChapter.blocks]
+        sourceBlocks.splice(sourceIndex, 1)
+        
+        // Add the block to the target chapter
+        const targetBlocks = [...targetChapter.blocks]
+        targetBlocks.splice(targetIndex, 0, block)
+        
+        // Update both chapters
+        const sourceChapterIndex = updatedChapters.findIndex(ch => ch.id === sourceChapterId)
+        const targetChapterIndex = updatedChapters.findIndex(ch => ch.id === targetChapterId)
+        
+        updatedChapters[sourceChapterIndex] = {
+          ...sourceChapter,
+          blocks: sourceBlocks
+        }
+        
+        updatedChapters[targetChapterIndex] = {
+          ...targetChapter,
+          blocks: targetBlocks
+        }
+      }
+      
+      // Update the course with the new chapters
+      onUpdateCourse({
+        ...course,
+        chapters: updatedChapters
+      })
+    } catch (error) {
+      console.error("Error handling block drop:", error)
+    }
+    
+    // Reset states
+    setDraggedBlockInfo(null)
+    setActiveDropZone(null)
+  }
+
+  // Handle drag over for drop indicators
+  const handleDragOver = (e: React.DragEvent, chapterId: string, index: number) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setActiveDropZone({ chapterId, index })
+  }
+
+  // Handle drag leave to clear drop indicators
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setActiveDropZone(null)
+  }
 
   return (
     <div className="flex flex-col w-full h-full border-r border-border bg-card text-card-foreground apple-panel">
@@ -88,12 +266,21 @@ export default function ContentEditor({ course, onUpdateCourse }: ContentEditorP
       </div>
 
       <div
-        ref={drop}
+        ref={editorRef}
         className={`flex-1 overflow-y-auto p-4 ${
-          isOver && canDrop
+          isDragOver
             ? "bg-blue-50/50 dark:bg-blue-900/10 border-2 border-dashed border-blue-300 dark:border-blue-700 rounded-xl"
             : ""
         }`}
+        onDragOver={(e) => {
+          e.preventDefault()
+          setIsDragOver(true)
+        }}
+        onDragLeave={(e) => {
+          e.preventDefault()
+          setIsDragOver(false)
+        }}
+        onDrop={handleEditorDrop}
       >
         {course.chapters.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
@@ -123,46 +310,79 @@ export default function ContentEditor({ course, onUpdateCourse }: ContentEditorP
               </div>
 
               {expandedChapters[chapter.id] !== false && (
-                <div className="ml-8 space-y-4">
+                <div className="ml-8 space-y-0">
                   {chapter.blocks.map((block, index) => (
-                    <div key={block.id} className="flex items-start group">
-                      <div className="mt-1 mr-2 opacity-0 group-hover:opacity-100 cursor-move">
-                        <GripVerticalIcon className="h-5 w-5 text-muted-foreground" />
+                    <React.Fragment key={block.id}>
+                      {/* Drop zone above block */}
+                      <div 
+                        className={`h-2 w-full my-1 rounded transition-all duration-200 ${
+                          activeDropZone?.chapterId === chapter.id && activeDropZone?.index === index 
+                            ? "bg-blue-200 dark:bg-blue-800 h-4" 
+                            : "bg-transparent"
+                        }`}
+                        onDragOver={(e) => handleDragOver(e, chapter.id, index)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleBlockDrop(e, chapter.id, index)}
+                      ></div>
+                      
+                      {/* Block */}
+                      <div className="flex items-start group">
+                        <div 
+                          className="mt-1 mr-2 opacity-0 group-hover:opacity-100 cursor-move"
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, block, chapter.id, index)}
+                        >
+                          <GripVerticalIcon className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <div className="flex-grow">
+                          <ContentBlockComponent
+                            block={block}
+                            onUpdate={(updatedBlock) => {
+                              const updatedBlocks = [...chapter.blocks]
+                              updatedBlocks[index] = updatedBlock
+
+                              const updatedChapters = course.chapters.map((ch) =>
+                                ch.id === chapter.id ? { ...ch, blocks: updatedBlocks } : ch,
+                              )
+
+                              onUpdateCourse({
+                                ...course,
+                                chapters: updatedChapters,
+                              })
+                            }}
+                            onDelete={() => {
+                              const updatedBlocks = chapter.blocks.filter((b) => b.id !== block.id)
+
+                              const updatedChapters = course.chapters.map((ch) =>
+                                ch.id === chapter.id ? { ...ch, blocks: updatedBlocks } : ch,
+                              )
+
+                              onUpdateCourse({
+                                ...course,
+                                chapters: updatedChapters,
+                              })
+                            }}
+                          />
+                        </div>
                       </div>
-                      <ContentBlockComponent
-                        block={block}
-                        onUpdate={(updatedBlock) => {
-                          const updatedBlocks = [...chapter.blocks]
-                          updatedBlocks[index] = updatedBlock
-
-                          const updatedChapters = course.chapters.map((ch) =>
-                            ch.id === chapter.id ? { ...ch, blocks: updatedBlocks } : ch,
-                          )
-
-                          onUpdateCourse({
-                            ...course,
-                            chapters: updatedChapters,
-                          })
-                        }}
-                        onDelete={() => {
-                          const updatedBlocks = chapter.blocks.filter((b) => b.id !== block.id)
-
-                          const updatedChapters = course.chapters.map((ch) =>
-                            ch.id === chapter.id ? { ...ch, blocks: updatedBlocks } : ch,
-                          )
-
-                          onUpdateCourse({
-                            ...course,
-                            chapters: updatedChapters,
-                          })
-                        }}
-                      />
-                    </div>
+                    </React.Fragment>
                   ))}
+
+                  {/* Final drop zone */}
+                  <div 
+                    className={`h-2 w-full my-1 rounded transition-all duration-200 ${
+                      activeDropZone?.chapterId === chapter.id && activeDropZone?.index === chapter.blocks.length 
+                        ? "bg-blue-200 dark:bg-blue-800 h-4" 
+                        : "bg-transparent"
+                    }`}
+                    onDragOver={(e) => handleDragOver(e, chapter.id, chapter.blocks.length)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleBlockDrop(e, chapter.id, chapter.blocks.length)}
+                  ></div>
 
                   <Button
                     variant="outline"
-                    className="w-full border-dashed rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors duration-200"
+                    className="w-full mt-4 border-dashed rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors duration-200"
                     onClick={() => {
                       const newBlock: ContentBlock = {
                         id: `block-${Date.now()}`,
@@ -187,7 +407,7 @@ export default function ContentEditor({ course, onUpdateCourse }: ContentEditorP
             </div>
           ))
         )}
-
+        
         {course.chapters.length > 0 && (
           <Button
             variant="outline"
@@ -207,7 +427,18 @@ export default function ContentEditor({ course, onUpdateCourse }: ContentEditorP
           Update Course
         </Button>
       </div>
+
+      {/* Add the drag preview */}
+      <DragPreview />
     </div>
   )
 }
 
+// Wrap the component with DndProvider
+export default function ContentEditor(props: ContentEditorProps) {
+  return (
+    <DndProvider backend={HTML5Backend}>
+      <ContentEditorInner {...props} />
+    </DndProvider>
+  )
+}
