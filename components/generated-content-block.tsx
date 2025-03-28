@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import type { ContentBlock } from "@/lib/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { FileTextIcon, FileIcon, CheckSquareIcon, VideoIcon, HelpCircleIcon, LinkIcon, MoveIcon } from "lucide-react"
@@ -12,6 +12,28 @@ interface GeneratedContentBlockProps {
 
 export default function GeneratedContentBlock({ content, onAddToEditor }: GeneratedContentBlockProps) {
   const [isDragging, setIsDragging] = useState(false)
+
+  // Add useEffect to ensure dragging state is always reset
+  useEffect(() => {
+    const handleGlobalDragEnd = () => {
+      setIsDragging(false)
+    }
+
+    window.addEventListener('dragend', handleGlobalDragEnd)
+    window.addEventListener('drop', handleGlobalDragEnd)
+    
+    return () => {
+      window.removeEventListener('dragend', handleGlobalDragEnd)
+      window.removeEventListener('drop', handleGlobalDragEnd)
+    }
+  }, [])
+
+  // Ensure the dragging state is reset with a timeout
+  const resetDragState = () => {
+    setTimeout(() => {
+      setIsDragging(false)
+    }, 50)
+  }
 
   const getIcon = () => {
     switch (content.type) {
@@ -54,7 +76,7 @@ export default function GeneratedContentBlock({ content, onAddToEditor }: Genera
   }
 
   const handleDragEnd = (e: React.DragEvent) => {
-    setIsDragging(false)
+    resetDragState()
     // Check if the drop was successful (can be determined by dropEffect)
     if (e.dataTransfer.dropEffect === 'copy' || e.dataTransfer.dropEffect === 'move') {
       onAddToEditor(content)

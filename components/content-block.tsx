@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import type { ContentBlock } from "@/lib/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -30,6 +30,26 @@ export default function ContentBlockComponent({ block, onUpdate, onDelete }: Con
   const [isEditing, setIsEditing] = useState(false)
   const [editedContent, setEditedContent] = useState(block.content)
   const [isDragging, setIsDragging] = useState(false)
+
+  useEffect(() => {
+    const handleDragEnd = () => {
+      setIsDragging(false)
+    }
+
+    window.addEventListener('dragend', handleDragEnd)
+    window.addEventListener('drop', handleDragEnd)
+    
+    return () => {
+      window.removeEventListener('dragend', handleDragEnd)
+      window.removeEventListener('drop', handleDragEnd)
+    }
+  }, [])
+
+  const resetDragState = () => {
+    setTimeout(() => {
+      setIsDragging(false)
+    }, 50)
+  }
 
   const getIcon = () => {
     switch (block.type) {
@@ -73,7 +93,7 @@ export default function ContentBlockComponent({ block, onUpdate, onDelete }: Con
         setIsDragging(true)
         e.dataTransfer.setData('application/json', JSON.stringify(block))
       }}
-      onDragEnd={() => setIsDragging(false)}
+      onDragEnd={resetDragState}
     >
       <Card className={`w-full apple-card ${isDragging ? "border-2 border-blue-400 shadow-lg" : ""}`}>
         <CardContent className="p-4">

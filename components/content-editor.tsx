@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef } from "react"
+import React, { useState, useRef, useEffect } from "react"
 import type { Course, ContentBlock, Chapter } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -79,6 +79,23 @@ function ContentEditorInner({ course, onUpdateCourse }: ContentEditorProps) {
   const [activeDropZone, setActiveDropZone] = useState<{ chapterId: string, index: number } | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const editorRef = useRef<HTMLDivElement>(null)
+
+  // Add this useEffect to properly handle drag end events
+  useEffect(() => {
+    const handleGlobalDragEnd = () => {
+      setDraggedBlockInfo(null)
+      setActiveDropZone(null)
+      setIsDragOver(false)
+    }
+
+    window.addEventListener('dragend', handleGlobalDragEnd)
+    window.addEventListener('drop', handleGlobalDragEnd)
+    
+    return () => {
+      window.removeEventListener('dragend', handleGlobalDragEnd)
+      window.removeEventListener('drop', handleGlobalDragEnd)
+    }
+  }, [])
 
   const handleUpdateCourse = () => {
     // In a real app, this would save to the backend
