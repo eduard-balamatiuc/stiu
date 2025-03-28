@@ -129,11 +129,17 @@ function ContentEditorInner({ course, onUpdateCourse }: ContentEditorProps) {
     try {
       const blockData = JSON.parse(data)
       if (blockData && blockData.type === 'generated-block' && course.chapters.length > 0) {
+        // Ensure the block has a unique ID to avoid duplication issues
+        const blockToAdd = {
+          ...blockData.item,
+          id: blockData.item.id || `block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        }
+        
         // Add to the first chapter by default
         const updatedChapters = [...course.chapters]
         updatedChapters[0] = {
           ...updatedChapters[0],
-          blocks: [...updatedChapters[0].blocks, blockData.item],
+          blocks: [...updatedChapters[0].blocks, blockToAdd],
         }
 
         onUpdateCourse({
@@ -367,8 +373,8 @@ function ContentEditorInner({ course, onUpdateCourse }: ContentEditorProps) {
                                 chapters: updatedChapters,
                               })
                             }}
-                            onDelete={() => {
-                              const updatedBlocks = chapter.blocks.filter((b) => b.id !== block.id)
+                            onDelete={(blockToDelete) => {
+                              const updatedBlocks = chapter.blocks.filter((b) => b.id !== blockToDelete.id)
 
                               const updatedChapters = course.chapters.map((ch) =>
                                 ch.id === chapter.id ? { ...ch, blocks: updatedBlocks } : ch,

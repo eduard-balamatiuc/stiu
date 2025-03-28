@@ -22,7 +22,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 interface ContentBlockProps {
   block: ContentBlock
   onUpdate: (block: ContentBlock) => void
-  onDelete: () => void
+  onDelete: (block: ContentBlock) => void
 }
 
 export default function ContentBlockComponent({ block, onUpdate, onDelete }: ContentBlockProps) {
@@ -44,6 +44,10 @@ export default function ContentBlockComponent({ block, onUpdate, onDelete }: Con
       window.removeEventListener('drop', handleDragEnd)
     }
   }, [])
+
+  useEffect(() => {
+    setEditedContent(block.content);
+  }, [block.content]);
 
   const resetDragState = () => {
     setTimeout(() => {
@@ -83,6 +87,12 @@ export default function ContentBlockComponent({ block, onUpdate, onDelete }: Con
       content: editedContent,
     })
     setIsEditing(false)
+  }
+
+  const handleDelete = () => {
+    if (block && block.id) {
+      onDelete(block);
+    }
   }
 
   return (
@@ -163,7 +173,7 @@ export default function ContentBlockComponent({ block, onUpdate, onDelete }: Con
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors duration-200"
-                onClick={onDelete}
+                onClick={handleDelete}
               >
                 <Trash2Icon className="h-4 w-4" />
               </Button>

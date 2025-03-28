@@ -98,7 +98,12 @@ export default function LLMAssistant({
   const [{ isOver }, drop] = useDrop(() => ({
     accept: "generated-block",
     drop: (item: ContentBlock) => {
-      onAddContentToEditor(item)
+      // Create a new copy with a unique ID before adding to editor
+      const uniqueContent = {
+        ...item,
+        id: `editor-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      };
+      onAddContentToEditor(uniqueContent);
     },
     collect: (monitor) => ({
       isOver: !!monitor.isOver(),

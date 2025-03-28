@@ -56,9 +56,16 @@ export default function GeneratedContentBlock({ content, onAddToEditor }: Genera
 
   const handleDragStart = (e: React.DragEvent) => {
     setIsDragging(true)
+    
+    // Create a deep copy of the content with a new ID to ensure uniqueness
+    const contentCopy = {
+      ...content,
+      id: `gen-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    }
+    
     e.dataTransfer.setData('text', JSON.stringify({
       type: 'generated-block',
-      item: content
+      item: contentCopy
     }))
     e.dataTransfer.effectAllowed = 'copy'
     
@@ -77,9 +84,16 @@ export default function GeneratedContentBlock({ content, onAddToEditor }: Genera
 
   const handleDragEnd = (e: React.DragEvent) => {
     resetDragState()
-    // Check if the drop was successful (can be determined by dropEffect)
-    if (e.dataTransfer.dropEffect === 'copy' || e.dataTransfer.dropEffect === 'move') {
-      onAddToEditor(content)
+    
+    // Only add to editor if the drop was successful AND it's a move operation
+    // This prevents duplicate blocks from being created
+    if (e.dataTransfer.dropEffect === 'move') {
+      try {
+        // Don't automatically call onAddToEditor here
+        // Let the drop handler in ContentEditor handle it
+      } catch (error) {
+        console.error("Error in drag end:", error)
+      }
     }
   }
 

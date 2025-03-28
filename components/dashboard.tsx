@@ -122,12 +122,21 @@ export default function Dashboard() {
 
   const handleAddContentToEditor = (content: ContentBlock) => {
     if (selectedCourse && selectedCourse.chapters.length > 0) {
+      // Ensure the content has a unique ID
+      const uniqueContent = {
+        ...content,
+        id: content.id || `unique-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      };
+      
       const updatedCourse = { ...selectedCourse }
-      updatedCourse.chapters[0].blocks.push(content)
+      updatedCourse.chapters[0].blocks.push(uniqueContent)
       handleUpdateCourse(updatedCourse)
 
-      // Remove from generated content
-      setGeneratedContent(generatedContent.filter((c) => c.id !== content.id))
+      // Remove from generated content only if it exists there
+      const existingIndex = generatedContent.findIndex(c => c.id === content.id);
+      if (existingIndex >= 0) {
+        setGeneratedContent(generatedContent.filter((c) => c.id !== content.id))
+      }
     }
   }
 
