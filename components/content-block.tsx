@@ -20,6 +20,9 @@ import {
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { QuizEditor } from "./quiz-editor"
+import ReactMarkdown from 'react-markdown'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 interface ContentBlockProps {
   block: ContentBlock
@@ -132,10 +135,21 @@ export default function ContentBlockComponent({ block, onUpdate, onDelete }: Con
 
     if (block.type === "quiz") {
       return (
-        <div className="prose dark:prose-invert max-w-none">
-          <pre className="text-sm bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-auto">
+        <div className="prose max-w-none">
+          <SyntaxHighlighter 
+            language="xml" 
+            className="rounded-lg"
+          >
             {block.content}
-          </pre>
+          </SyntaxHighlighter>
+        </div>
+      )
+    }
+
+    if (block.type === "text") {
+      return (
+        <div className="prose dark:prose-invert max-w-none">
+          <ReactMarkdown>{block.content}</ReactMarkdown>
         </div>
       )
     }

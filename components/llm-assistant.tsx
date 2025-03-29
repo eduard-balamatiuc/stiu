@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { SendIcon, SettingsIcon, DatabaseIcon, PlusIcon } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useDrop } from "react-dnd"
+import type { ConnectDropTarget } from 'react-dnd'
 import GeneratedContentBlock from "./generated-content-block"
 
 interface LLMAssistantProps {
@@ -37,7 +38,12 @@ export default function LLMAssistant({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [systemPrompt, setSystemPrompt] = useState(
-    "You are a helpful assistant for creating educational content for MCC (moodle course creator). Make sure you provide direct answers to the user's questions without any additional information or explanations like Here is or Here are or smth like this. When you are asked to generate quiz, make sure the quiz is generated in a xml format that can be imported into moodle.",
+    "You are a helpful assistant for creating educational content for MCC (moodle course creator). Follow these formatting rules:\n" +
+    "1. For regular content, use proper markdown formatting with headers (#, ##, ###), lists (-, *), bold (**), italic (*), code blocks (```), etc.\n" +
+    "2. For quizzes, generate valid XML that follows Moodle's quiz format, including proper question types, feedback, and scoring.\n" +
+    "3. Never mix markdown and XML in the same response.\n" +
+    "4. Always use proper language identifiers in code blocks (e.g. ```python, ```java).\n" +
+    "5. For mathematical content, use LaTeX notation between $ symbols for inline math and $$ for block math."
   )
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -47,46 +53,37 @@ export default function LLMAssistant({
   }, [selectedChat.messages])
 
   const detectContentType = (content: string): ContentBlock["type"] => {
-    // Check for quiz-related keywords
-    if (content.toLowerCase().includes("quiz") || 
-        content.toLowerCase().includes("question") ||
-        content.toLowerCase().includes("answer") ||
-        content.toLowerCase().includes("multiple choice") ||
-        content.toLowerCase().includes("true/false")) {
+    // Check if content is XML (quiz)
+    if (content.trim().startsWith('<?xml') || 
+        content.includes('<quiz>') ||
+        content.toLowerCase().includes('question type=')) {
       return "quiz"
     }
     
-    // Check for task-related keywords
-    if (content.toLowerCase().includes("task:") || 
-        content.toLowerCase().includes("todo:") ||
-        content.toLowerCase().includes("assignment:") ||
-        content.toLowerCase().includes("exercise:")) {
+    // Check for task-related keywords at the start of content
+    if (/^(task|todo|assignment|exercise):/i.test(content)) {
       return "task"
     }
     
-    // Check for video-related keywords
-    if (content.toLowerCase().includes("video:") ||
-        content.toLowerCase().includes("watch:") ||
-        content.toLowerCase().includes("youtube.com") ||
-        content.toLowerCase().includes("vimeo.com")) {
+    // Check for video URLs or video-related content
+    if (/^(video|watch):/i.test(content) ||
+        content.includes('youtube.com/watch') ||
+        content.includes('vimeo.com')) {
       return "video"
     }
     
-    // Check for link-related content
-    if (content.toLowerCase().includes("http://") ||
-        content.toLowerCase().includes("https://") ||
-        content.toLowerCase().includes("www.")) {
+    // Check for URLs that should be links
+    if (/^https?:\/\//.test(content) ||
+        content.startsWith('www.')) {
       return "link"
     }
     
-    // Check for file-related content
-    if (content.toLowerCase().includes("file:") ||
-        content.toLowerCase().includes("download:") ||
-        content.toLowerCase().includes("attachment:")) {
+    // Check for file attachments
+    if (/^(file|download|attachment):/i.test(content)) {
       return "file"
     }
     
-    // Default to text type
+    // Default to text type (markdown)
     return "text"
   }
 
@@ -169,10 +166,9 @@ export default function LLMAssistant({
     }
   }
 
-  const [{ isOver }, drop] = useDrop(() => ({
+  const [{ isOver }, drop] = useDrop<ContentBlock, void, { isOver: boolean }>(() => ({
     accept: "generated-block",
     drop: (item: ContentBlock) => {
-      // Create a new copy with a unique ID before adding to editor
       const uniqueContent = {
         ...item,
         id: `editor-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -303,7 +299,7 @@ export default function LLMAssistant({
               </Button>
             </div>
             <div
-              ref={drop}
+              ref={(node) => drop(node)}
               className={`space-y-2 max-h-40 overflow-y-auto ${isOver ? "bg-blue-50/50 dark:bg-blue-900/10 rounded-xl" : ""}`}
             >
               {generatedContent.map((content) => (
