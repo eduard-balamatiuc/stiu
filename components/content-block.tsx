@@ -16,8 +16,10 @@ import {
   ChevronUpIcon,
   Edit2Icon,
   Trash2Icon,
+  MoreVerticalIcon,
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { QuizEditor } from "./quiz-editor"
 
 interface ContentBlockProps {
   block: ContentBlock
@@ -93,6 +95,56 @@ export default function ContentBlockComponent({ block, onUpdate, onDelete }: Con
     if (block && block.id) {
       onDelete(block);
     }
+  }
+
+  const renderContent = () => {
+    if (isEditing) {
+      if (block.type === "quiz") {
+        return (
+          <QuizEditor
+            initialXml={block.content}
+            onSave={(xml: string) => {
+              onUpdate({
+                ...block,
+                content: xml,
+              })
+              setIsEditing(false)
+            }}
+          />
+        )
+      }
+      return (
+        <div className="space-y-4">
+          <Textarea
+            value={editedContent}
+            onChange={(e) => setEditedContent(e.target.value)}
+            className="min-h-[100px]"
+          />
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={() => setIsEditing(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit}>Save</Button>
+          </div>
+        </div>
+      )
+    }
+
+    if (block.type === "quiz") {
+      return (
+        <div className="prose dark:prose-invert max-w-none">
+          <pre className="text-sm bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-auto">
+            {block.content}
+          </pre>
+        </div>
+      )
+    }
+
+    return (
+      <div className="prose dark:prose-invert max-w-none">
+        {block.content}
+      </div>
+    )
   }
 
   return (
@@ -180,37 +232,7 @@ export default function ContentBlockComponent({ block, onUpdate, onDelete }: Con
             </div>
           </div>
 
-          {isEditing ? (
-            <div className="mt-3">
-              <Textarea
-                value={editedContent}
-                onChange={(e) => setEditedContent(e.target.value)}
-                className="min-h-[100px] apple-input"
-              />
-              <div className="flex justify-end gap-2 mt-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setEditedContent(block.content)
-                    setIsEditing(false)
-                  }}
-                  className="rounded-full"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSaveEdit}
-                  className="apple-button"
-                >
-                  Save
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className={`mt-2 text-muted-foreground ${isExpanded ? "" : "line-clamp-2"}`}>{block.content}</div>
-          )}
+          {renderContent()}
         </CardContent>
       </Card>
     </div>
