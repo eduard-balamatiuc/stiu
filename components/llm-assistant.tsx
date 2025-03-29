@@ -37,7 +37,7 @@ export default function LLMAssistant({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [systemPrompt, setSystemPrompt] = useState(
-    "You are a helpful assistant for creating educational content for Moodle courses.",
+    "You are a helpful assistant for creating educational content for MCC (moodle course creator). Make sure you provide direct answers to the user's questions without any additional information or explanations like Here is or Here are or smth like this. When you are asked to generate quiz, make sure the quiz is generated in a xml format that can be imported into moodle.",
   )
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
