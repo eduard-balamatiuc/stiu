@@ -26,24 +26,24 @@
 }
 
 .dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 98%;
+  --background: 220 7% 8%;  /* Slightly blue-tinted dark background */
+  --foreground: 0 0% 98%;
+  --card: 222 7% 9%;
+  --card-foreground: 0 0% 98%;
+  --popover: 222 7% 9%;
+  --popover-foreground: 0 0% 98%;
   --primary: 217.2 91.2% 59.8%;
   --primary-foreground: 222.2 47.4% 11.2%;
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 98%;
+  --secondary: 217.2 32.6% 15%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 215 12% 14%;
+  --muted-foreground: 215 20.2% 75%;
+  --accent: 217.2 32.6% 17%;
+  --accent-foreground: 0 0% 98%;
   --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 217.2 32.6% 13%;
+  --input: 215 12% 14%;
   --ring: 224.3 76.3% 48%;
 }
 
@@ -59,27 +59,48 @@ body {
 @layer components {
   /* Apple-style design elements */
   .apple-card {
-    @apply rounded-xl bg-white/80 dark:bg-black/80 backdrop-blur-md shadow-lg border border-gray-200/50 dark:border-gray-800/50;
+    @apply rounded-xl bg-white/80 dark:bg-[#1a1b1e]/90 backdrop-blur-md shadow-lg border border-gray-200/50 dark:border-gray-800/30 transition-all duration-300 hover:dark:border-gray-700/40 hover:dark:bg-[#1c1d20]/95;
   }
 
   .apple-button {
-    @apply rounded-full bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-all duration-200 text-gray-800 dark:text-gray-200;
+    @apply rounded-full bg-white dark:bg-[#202123] shadow-sm hover:shadow-md transition-all duration-300 text-gray-800 dark:text-gray-200 hover:dark:bg-[#2a2b2d] dark:border dark:border-gray-800/30 hover:dark:border-gray-700/40;
   }
 
   .apple-input {
-    @apply rounded-lg border border-gray-300 dark:border-gray-700 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all duration-200;
+    @apply rounded-lg border border-gray-300 dark:border-gray-800/30 bg-white/90 dark:bg-[#202123]/90 backdrop-blur-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all duration-300 hover:dark:border-gray-700/40 dark:placeholder-gray-500;
   }
 
   .apple-panel {
-    @apply bg-gray-50/90 dark:bg-gray-900/90 backdrop-blur-md border-gray-200/50 dark:border-gray-800/50;
+    @apply bg-gray-50/90 dark:bg-gradient-to-b from-[#202123]/95 to-[#1a1b1e]/95 backdrop-blur-md border-gray-200/50 dark:border-gray-800/30 transition-all duration-300;
   }
 
   .apple-gradient {
-    @apply bg-gradient-to-br from-blue-500 to-purple-600 text-white;
+    @apply bg-gradient-to-br from-blue-500 to-purple-600 dark:from-blue-600 dark:to-purple-700 text-white transition-all duration-300;
   }
 
   .apple-shadow {
-    @apply shadow-md dark:shadow-lg;
+    @apply shadow-md dark:shadow-lg shadow-black/5 dark:shadow-black/20 transition-shadow duration-300;
+  }
+
+  /* New emotional hover effects */
+  .hover-glow {
+    @apply transition-all duration-300 hover:dark:shadow-[0_0_15px_rgba(59,130,246,0.15)];
+  }
+
+  .hover-lift {
+    @apply transition-all duration-300 hover:dark:-translate-y-0.5;
+  }
+
+  .hover-shine {
+    @apply relative overflow-hidden;
+  }
+
+  .hover-shine::after {
+    @apply content-[''] absolute top-0 left-[-100%] w-full h-full bg-gradient-to-r from-transparent via-white/5 to-transparent transform transition-all duration-500;
+  }
+
+  .hover-shine:hover::after {
+    @apply left-[100%];
   }
 }
 
