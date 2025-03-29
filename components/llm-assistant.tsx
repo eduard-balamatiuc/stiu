@@ -46,7 +46,7 @@ export default function LLMAssistant({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [selectedChat.messages])
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!input.trim()) return
 
     const userMessage: Message = {
@@ -66,12 +66,28 @@ export default function LLMAssistant({
     setInput("")
     setIsGenerating(true)
 
-    // Simulate LLM response
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: updatedMessages,
+          systemPrompt,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate response');
+      }
+
+      const data = await response.json();
+
       const assistantMessage: Message = {
-        id: `msg-${Date.now() + 1}`,
+        id: data.id,
         role: "assistant",
-        content: `Here's some content for your course about "${input}"`,
+        content: data.message,
         timestamp: Date.now(),
       }
 
@@ -82,17 +98,30 @@ export default function LLMAssistant({
         messages: finalMessages,
       })
 
-      setIsGenerating(false)
-
       // Generate a content block
       const newContent: ContentBlock = {
         id: `gen-${Date.now()}`,
         type: "text",
-        content: `This is generated content about "${input}". You can drag this to your course content.`,
+        content: data.message,
       }
 
       onGenerateContent(newContent)
-    }, 1500)
+    } catch (error) {
+      console.error('Error:', error);
+      // Add error message to chat
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        role: "assistant",
+        content: "Sorry, I encountered an error while generating a response. Please try again.",
+        timestamp: Date.now(),
+      }
+      onUpdateChat({
+        ...selectedChat,
+        messages: [...updatedMessages, errorMessage],
+      })
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   const [{ isOver }, drop] = useDrop(() => ({
