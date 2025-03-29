@@ -164,7 +164,7 @@ export default function ContentBlockComponent({ block, onUpdate, onDelete }: Con
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200"
+                className="h-8 w-8 p-0 rounded-full hover:bg-secondary transition-all duration-200"
                 onClick={() => setIsExpanded(!isExpanded)}
               >
                 {isExpanded ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
@@ -172,7 +172,7 @@ export default function ContentBlockComponent({ block, onUpdate, onDelete }: Con
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors duration-200"
+                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-full transition-all duration-200"
                 onClick={handleDelete}
               >
                 <Trash2Icon className="h-4 w-4" />
@@ -195,21 +195,21 @@ export default function ContentBlockComponent({ block, onUpdate, onDelete }: Con
                     setEditedContent(block.content)
                     setIsEditing(false)
                   }}
-                  className="rounded-full border border-gray-300 dark:border-gray-700 transition-colors duration-200"
+                  className="rounded-full"
                 >
                   Cancel
                 </Button>
                 <Button
                   size="sm"
                   onClick={handleSaveEdit}
-                  className="rounded-full bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-200"
+                  className="apple-button"
                 >
                   Save
                 </Button>
               </div>
             </div>
           ) : (
-            <div className={`mt-2 ${isExpanded ? "" : "line-clamp-2"}`}>{block.content}</div>
+            <div className={`mt-2 text-muted-foreground ${isExpanded ? "" : "line-clamp-2"}`}>{block.content}</div>
           )}
         </CardContent>
       </Card>

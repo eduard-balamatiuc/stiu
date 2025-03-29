@@ -17,16 +17,20 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-gray-900">Moodle Course Creator</h1>
-          <p className="mt-2 text-gray-600">Create and manage your Moodle courses with AI assistance</p>
+          <h1 className="text-4xl font-semibold tracking-tight text-foreground">
+            Moodle Course Creator
+          </h1>
+          <p className="mt-3 text-lg text-muted-foreground ">
+            Create and manage your Moodle courses with AI assistance
+          </p>
         </div>
-        <div className="mt-8 space-y-6">
+        <div className="mt-10">
           <Button
             onClick={handleLogin}
-            className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700"
+            className="w-full apple-button text-base py-6"
             disabled={isLoading}
           >
             {isLoading ? (

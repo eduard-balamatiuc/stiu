@@ -554,7 +554,7 @@ function ContentEditorInner({ course, onUpdateCourse }: ContentEditorProps) {
 
       <div className="p-4 border-t border-border">
         <Button
-          className="w-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-sm hover:shadow-md transition-all duration-200"
+          className="w-full apple-button text-base py-6"
           onClick={handleUpdateCourse}
         >
           Update Course
