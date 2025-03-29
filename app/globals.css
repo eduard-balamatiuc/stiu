@@ -3,47 +3,47 @@
 @tailwind utilities;
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11.2%;
   --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
+  --card-foreground: 222 47% 11.2%;
   --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 210 100% 50%;
+  --popover-foreground: 222 47% 11.2%;
+  --primary: 210 90% 50%;
   --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222.2 47.4% 11.2%;
+  --secondary: 210 25% 96%;
+  --secondary-foreground: 222 47% 11.2%;
+  --muted: 210 20% 96%;
+  --muted-foreground: 215 25% 46%;
+  --accent: 210 15% 94%;
+  --accent-foreground: 222 47% 11.2%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
+  --border: 214.3 32% 91%;
+  --input: 214.3 32% 91%;
   --ring: 221.2 83.2% 53.3%;
   --radius: 0.75rem;
 }
 
 .dark {
-  --background: 220 7% 8%;  /* Slightly blue-tinted dark background */
-  --foreground: 0 0% 98%;
-  --card: 222 7% 9%;
-  --card-foreground: 0 0% 98%;
-  --popover: 222 7% 9%;
-  --popover-foreground: 0 0% 98%;
+  --background: 222 47% 11%;
+  --foreground: 210 40% 98%;
+  --card: 222 47% 11%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222 47% 11%;
+  --popover-foreground: 210 40% 98%;
   --primary: 217.2 91.2% 59.8%;
   --primary-foreground: 222.2 47.4% 11.2%;
-  --secondary: 217.2 32.6% 15%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 215 12% 14%;
-  --muted-foreground: 215 20.2% 75%;
+  --secondary: 217.2 32.6% 17%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17%;
+  --muted-foreground: 215 20.2% 65%;
   --accent: 217.2 32.6% 17%;
-  --accent-foreground: 0 0% 98%;
+  --accent-foreground: 210 40% 98%;
   --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 217.2 32.6% 13%;
-  --input: 215 12% 14%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17%;
+  --input: 217.2 32.6% 17%;
   --ring: 224.3 76.3% 48%;
 }
 
@@ -54,32 +54,34 @@
 body {
   @apply bg-background text-foreground;
   font-feature-settings: "rlig" 1, "calt" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 @layer components {
   /* Apple-style design elements */
   .apple-card {
-    @apply rounded-xl bg-white/80 dark:bg-[#1a1b1e]/90 backdrop-blur-md shadow-lg border border-gray-200/50 dark:border-gray-800/30 transition-all duration-300 hover:dark:border-gray-700/40 hover:dark:bg-[#1c1d20]/95;
+    @apply rounded-xl bg-white/90 dark:bg-[#1e2023]/80 backdrop-blur-md shadow-sm border border-gray-200/60 dark:border-gray-800/40 transition-all duration-300;
   }
 
   .apple-button {
-    @apply rounded-full bg-white dark:bg-[#202123] shadow-sm hover:shadow-md transition-all duration-300 text-gray-800 dark:text-gray-200 hover:dark:bg-[#2a2b2d] dark:border dark:border-gray-800/30 hover:dark:border-gray-700/40;
+    @apply rounded-full bg-primary/90 text-primary-foreground shadow-sm transition-all duration-300 font-medium hover:bg-primary;
   }
 
   .apple-input {
-    @apply rounded-lg border border-gray-300 dark:border-gray-800/30 bg-white/90 dark:bg-[#202123]/90 backdrop-blur-sm focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all duration-300 hover:dark:border-gray-700/40 dark:placeholder-gray-500;
+    @apply rounded-lg border border-input bg-white/80 dark:bg-[#1e2023]/70 backdrop-blur-sm px-4 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 placeholder:text-muted-foreground/70;
   }
 
   .apple-panel {
-    @apply bg-gray-50/90 dark:bg-gradient-to-b from-[#202123]/95 to-[#1a1b1e]/95 backdrop-blur-md border-gray-200/50 dark:border-gray-800/30 transition-all duration-300;
+    @apply bg-white/80 dark:bg-[#1e2023]/70 backdrop-blur-md border-gray-200/60 dark:border-gray-800/40 shadow-sm rounded-2xl;
   }
 
   .apple-gradient {
-    @apply bg-gradient-to-br from-blue-500 to-purple-600 dark:from-blue-600 dark:to-purple-700 text-white transition-all duration-300;
+    @apply bg-gradient-to-br from-primary/90 to-primary/70 text-primary-foreground;
   }
 
   .apple-shadow {
-    @apply shadow-md dark:shadow-lg shadow-black/5 dark:shadow-black/20 transition-shadow duration-300;
+    @apply shadow-sm shadow-black/5 dark:shadow-black/10;
   }
 
   /* New emotional hover effects */
@@ -101,6 +103,12 @@ body {
 
   .hover-shine:hover::after {
     @apply left-[100%];
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
   }
 }
 
