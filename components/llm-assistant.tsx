@@ -46,6 +46,50 @@ export default function LLMAssistant({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [selectedChat.messages])
 
+  const detectContentType = (content: string): ContentBlock["type"] => {
+    // Check for quiz-related keywords
+    if (content.toLowerCase().includes("quiz") || 
+        content.toLowerCase().includes("question") ||
+        content.toLowerCase().includes("answer") ||
+        content.toLowerCase().includes("multiple choice") ||
+        content.toLowerCase().includes("true/false")) {
+      return "quiz"
+    }
+    
+    // Check for task-related keywords
+    if (content.toLowerCase().includes("task:") || 
+        content.toLowerCase().includes("todo:") ||
+        content.toLowerCase().includes("assignment:") ||
+        content.toLowerCase().includes("exercise:")) {
+      return "task"
+    }
+    
+    // Check for video-related keywords
+    if (content.toLowerCase().includes("video:") ||
+        content.toLowerCase().includes("watch:") ||
+        content.toLowerCase().includes("youtube.com") ||
+        content.toLowerCase().includes("vimeo.com")) {
+      return "video"
+    }
+    
+    // Check for link-related content
+    if (content.toLowerCase().includes("http://") ||
+        content.toLowerCase().includes("https://") ||
+        content.toLowerCase().includes("www.")) {
+      return "link"
+    }
+    
+    // Check for file-related content
+    if (content.toLowerCase().includes("file:") ||
+        content.toLowerCase().includes("download:") ||
+        content.toLowerCase().includes("attachment:")) {
+      return "file"
+    }
+    
+    // Default to text type
+    return "text"
+  }
+
   const handleSendMessage = async () => {
     if (!input.trim()) return
 
@@ -98,10 +142,11 @@ export default function LLMAssistant({
         messages: finalMessages,
       })
 
-      // Generate a content block
+      // Generate a content block with detected type
+      const contentType = detectContentType(data.message)
       const newContent: ContentBlock = {
         id: `gen-${Date.now()}`,
-        type: "text",
+        type: contentType,
         content: data.message,
       }
 
