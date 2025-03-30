@@ -2,6 +2,8 @@
 
 A modern web application that helps university teachers easily create, manage, and update course content on Moodle, powered by AI assistance.
 
+> **Note:** This is a demo concept developed for a hackathon and is not in a fully working state. The prototype demonstrates the core concepts and potential capabilities of the final product.
+
 ![Platform Sketch](./readme_assets/platform_sketch.jpg)
 
 ## 🚀 The Problem
